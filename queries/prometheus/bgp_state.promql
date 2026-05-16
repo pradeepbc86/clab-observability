@@ -1,0 +1,28 @@
+# BGP state & convergence — PromQL gallery
+
+# Q: How many BGP neighbors are currently Established across the fabric?
+sum(frr_bgp_peer_state{state="Established"})
+
+# Q: Which peers are NOT Established right now?
+frr_bgp_peer_state{state!="Established"} == 1
+
+# Q: BGP session flap count, per-peer, last 24h
+changes(frr_bgp_peer_state[24h])
+
+# Q: 95th-percentile BGP convergence time (session-up to all-prefixes-received)
+histogram_quantile(0.95, sum by (le) (rate(frr_bgp_convergence_seconds_bucket[5m])))
+
+# Q: BFD detection time vs configured target (should be ~450ms with 150ms*3)
+avg by (instance, peer) (frr_bfd_detect_time_milliseconds)
+
+# Q: Rate of route updates received from each peer (sustained noisy peer?)
+rate(frr_bgp_peer_messages_received_total{type="UPDATE"}[5m])
+
+# Q: ECMP path count per destination prefix (multi-path health)
+avg by (instance) (frr_bgp_ecmp_paths)
+
+# Q: Time since last EVPN Type-2 update per VNI (detect stale advertisements)
+time() - frr_evpn_type2_last_update_timestamp_seconds
+
+# Q: Prefix count from each peer vs threshold (max-prefix early warning)
+(frr_bgp_peer_prefix_received_count / frr_bgp_peer_max_prefix_limit) > 0.80

@@ -1,6 +1,6 @@
-# clab-network-observability
+# clab-obs-telemetry
 
-Full BGP observability stack on ContainerLab: BMP route analytics in ClickHouse, syslog events in ELK, long-term metrics with Prometheus + Thanos, all visualized in Grafana.
+Full BGP observability stack on ContainerLab: BMP route analytics in ClickHouse, syslog events in ELK, long-term metrics with Prometheus + Thanos, Airflow DAGs for scheduled audits, all visualized in Grafana.
 
 ## Architecture
 
@@ -12,8 +12,11 @@ ContainerLab FRR nodes (3-node lab)
   ├── Syslog (UDP 514) → Logstash → Elasticsearch → Kibana (events)
   │   (Neighbor up/down, prefix changes, BGP state events)
   │
-  └── frr_exporter → Prometheus → Thanos → Grafana (long-term metrics)
-      (BGP neighbor count, route counts, convergence times)
+  ├── frr_exporter → Prometheus → Thanos → Grafana (long-term metrics)
+  │   (BGP neighbor count, route counts, convergence times)
+  │
+  └── Airflow → ClickHouse + Cloudflare RPKI → Elasticsearch
+      (Daily capacity reports, weekly route audits with RPKI checks)
 ```
 
 ## Tools
@@ -31,6 +34,7 @@ ContainerLab FRR nodes (3-node lab)
 | **Thanos** | Long-term Prometheus storage |
 | **Grafana** | Unified dashboard (ClickHouse + Prometheus + ES) |
 | **MinIO** | Object storage for Thanos |
+| **Airflow** | Scheduled DAGs (daily capacity report, weekly route audit) |
 | **GitLab CI/CD** | Docker Compose health checks |
 
 ## Dashboards
@@ -38,6 +42,11 @@ ContainerLab FRR nodes (3-node lab)
 - **BGP Routes** (ClickHouse): Prefix count over time, churn rate, top peers
 - **BGP Events** (Elasticsearch): Neighbor flap timeline, state changes
 - **BGP Metrics** (Prometheus/Thanos): Neighbor count, route counts, convergence
+
+## Airflow DAGs
+
+- **`bgp_capacity_report`** (daily): Pulls 24h prefix counts and top peers from ClickHouse, publishes summary to Elasticsearch
+- **`bgp_route_audit`** (weekly, Mondays): Detects churn anomalies (>10 state changes/24h), surfaces new prefixes not seen the prior week, spot-checks top 20 prefixes against Cloudflare RPKI
 
 ## Quick Start
 
@@ -71,6 +80,22 @@ docker-compose down
 - `configs/thanos/store.yml` — Thanos sidecar config
 - `clickhouse/schema.sql` — BGP route tables
 - `grafana/dashboards/` — Pre-built dashboards (JSON)
+
+## Network Setup Note
+
+ContainerLab creates its own Docker bridge network (`clab-<topo>`). The observability stack runs in Docker Compose's default bridge. For BMP, syslog, and frr_exporter to reach OpenBMP/Logstash/Prometheus, both networks must be connected.
+
+Option 1 — join the clab network in docker-compose:
+```yaml
+networks:
+  default:
+    external: true
+    name: clab-obs-telemetry
+```
+
+Option 2 — run everything with `--network host` (Linux only).
+
+Option 3 — use Docker host IP (`172.17.0.1`) as the collector address (already set in `configs/frr/spine1.conf`).
 
 ## Prerequisites
 

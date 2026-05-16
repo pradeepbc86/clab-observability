@@ -1,0 +1,50 @@
+Elasticsearch DSL — BGP event timeline queries
+
+# Q: Neighbor flap timeline per peer (last 24h)
+GET bgp-events-*/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "range": { "@timestamp": { "gte": "now-24h" } } },
+        { "match": { "syslog_message": "ADJCHANGE" } }
+      ]
+    }
+  },
+  "aggs": {
+    "by_peer": {
+      "terms": { "field": "neighbor_ip.keyword", "size": 20 },
+      "aggs": {
+        "by_hour": {
+          "date_histogram": { "field": "@timestamp", "calendar_interval": "hour" }
+        }
+      }
+    }
+  }
+}
+
+# Q: Top 10 noisiest devices by syslog volume (last hour)
+GET bgp-events-*/_search
+{
+  "size": 0,
+  "query": { "range": { "@timestamp": { "gte": "now-1h" } } },
+  "aggs": {
+    "noisy_devices": {
+      "terms": { "field": "syslog_hostname.keyword", "size": 10 }
+    }
+  }
+}
+
+# Q: Correlate BGP state-change events to a specific time window for incident replay
+GET bgp-events-*/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "range": { "@timestamp": { "gte": "2026-05-16T14:00:00Z", "lte": "2026-05-16T14:30:00Z" } } },
+        { "match": { "syslog_program": "bgpd" } }
+      ]
+    }
+  },
+  "sort": [{ "@timestamp": "asc" }]
+}

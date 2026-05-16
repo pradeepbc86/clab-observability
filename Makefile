@@ -27,11 +27,11 @@ destroy: .PHONY
 
 validate: .PHONY
 	@echo "Validating BGP neighbors on spine1..."
-	docker exec bgp-observability-spine1 vtysh -c "show bgp summary"
+	docker exec clab-obs-telemetry-spine1 vtysh -c "show bgp summary"
 	@echo "Validating BGP neighbors on leaf1..."
-	docker exec bgp-observability-leaf1 vtysh -c "show bgp summary"
+	docker exec clab-obs-telemetry-leaf1 vtysh -c "show bgp summary"
 	@echo "Validating BGP neighbors on leaf2..."
-	docker exec bgp-observability-leaf2 vtysh -c "show bgp summary"
+	docker exec clab-obs-telemetry-leaf2 vtysh -c "show bgp summary"
 	@echo "Checking OpenBMP connectivity..."
 	curl -s http://localhost:8123/ping || echo "ClickHouse not ready"
 

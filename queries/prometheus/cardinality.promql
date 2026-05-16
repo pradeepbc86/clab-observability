@@ -1,0 +1,16 @@
+# Cardinality audits — the #1 Prometheus failure mode
+
+# Q: Top 20 metrics by cardinality (series count)
+topk(20, count by (__name__) ({__name__=~".+"}))
+
+# Q: Which labels are pushing per-metric cardinality up?
+topk(10, count by (__name__, instance) ({__name__=~".+"}))
+
+# Q: Total series count for the whole TSDB (alert if > budget)
+prometheus_tsdb_head_series
+
+# Q: Rate of new series creation (sustained spike = label explosion)
+rate(prometheus_tsdb_head_series_created_total[5m])
+
+# Q: Memory consumed by the TSDB (correlated with cardinality)
+process_resident_memory_bytes{job="prometheus"} / 1024 / 1024

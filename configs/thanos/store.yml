@@ -1,9 +1,12 @@
+# Thanos sidecar object store config (S3-compatible MinIO)
+# Values must match MINIO_ROOT_USER / MINIO_ROOT_PASSWORD in .env
+# Generate final config with: envsubst < configs/thanos/store.yml > /tmp/thanos-store.yml
 type: S3
 config:
   bucket: thanos
   endpoint: minio:9000
-  access_key: minioadmin
-  secret_key: minioadmin
+  access_key: ${MINIO_ROOT_USER}
+  secret_key: ${MINIO_ROOT_PASSWORD}
   insecure: true
   signature_version2: false
   put_user_metadata: {}

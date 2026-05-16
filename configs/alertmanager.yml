@@ -1,0 +1,53 @@
+global:
+  resolve_timeout: 5m
+  # smtp_smarthost, slack_api_url etc would go here in a real deployment
+
+# Route alerts to channels by severity + team. Defaults match SRE conventions:
+# - critical: page (PagerDuty / Opsgenie)
+# - warning:  ticket (Slack/Jira)
+# - info:     log only
+route:
+  receiver: default-log
+  group_by: ['alertname', 'team']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    - matchers:
+        - severity = "critical"
+        - team = "network-ops"
+      receiver: page-noc
+      continue: true
+
+    - matchers:
+        - severity = "warning"
+        - team = "network-ops"
+      receiver: ticket-noc
+      continue: true
+
+# Inhibit warnings if a critical from the same group is firing —
+# avoids alert storms when a single failure cascades.
+inhibit_rules:
+  - source_matchers: [ severity = "critical" ]
+    target_matchers: [ severity = "warning" ]
+    equal: ['alertname', 'instance']
+
+receivers:
+  - name: default-log
+    # Local logging fallback when no integration is configured.
+    webhook_configs:
+      - url: "http://localhost:9094/alerts"
+        send_resolved: true
+
+  - name: page-noc
+    # In real deployments: pagerduty_configs / opsgenie_configs.
+    # For the lab, we point at a webhook receiver you can wire to whatever.
+    webhook_configs:
+      - url: "http://localhost:9095/page"
+        send_resolved: true
+
+  - name: ticket-noc
+    webhook_configs:
+      - url: "http://localhost:9096/ticket"
+        send_resolved: true

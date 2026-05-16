@@ -1,0 +1,74 @@
+groups:
+  - name: bgp_fabric_health
+    interval: 30s
+    rules:
+
+      - alert: BGPNeighborDown
+        expr: frr_bgp_peer_state{state!="Established"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          team: network-ops
+        annotations:
+          summary: "BGP neighbor {{ $labels.peer }} on {{ $labels.instance }} is not Established"
+          description: |
+            Peer {{ $labels.peer }} has been in state {{ $labels.state }} for at least 1 minute.
+            This typically indicates a link failure, BFD misconfiguration, or peer-side issue.
+          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/bgp-neighbor-down.md"
+
+      - alert: BGPPrefixCountDrop
+        expr: |
+          (
+            frr_bgp_peer_prefix_received_count
+            - frr_bgp_peer_prefix_received_count offset 5m
+          ) / frr_bgp_peer_prefix_received_count offset 5m
+          < -0.20
+        for: 2m
+        labels:
+          severity: warning
+          team: network-ops
+        annotations:
+          summary: "Prefix count from {{ $labels.peer }} dropped >20% in 5m"
+          description: |
+            Received prefixes from {{ $labels.peer }} dropped sharply.
+            Investigate peer route filter or BGP session resets.
+          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/bgp-prefix-drop.md"
+
+      - alert: BFDSessionFlapping
+        expr: changes(frr_bfd_peer_uptime_seconds[10m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          team: network-ops
+        annotations:
+          summary: "BFD session on {{ $labels.instance }} flapped >3 times in 10m"
+          description: |
+            BFD session to {{ $labels.peer }} bounced repeatedly.
+            Likely physical-layer issue (cable, optic, MTU mismatch).
+          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/bfd-flap.md"
+
+      - alert: EVPNVNIDown
+        expr: frr_evpn_vni_active == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: network-ops
+        annotations:
+          summary: "EVPN VNI {{ $labels.vni }} on {{ $labels.instance }} is inactive"
+          description: |
+            VNI {{ $labels.vni }} stopped advertising MAC/IP routes.
+            Hosts behind this leaf may lose connectivity to the rest of the segment.
+          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/evpn-vni-down.md"
+
+      - alert: RPKIInvalidObserved
+        expr: increase(bmp_rpki_invalid_total[1h]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: network-ops
+        annotations:
+          summary: "{{ $value }} RPKI-invalid prefix(es) observed in BMP feed (1h)"
+          description: |
+            BMP stream surfaced one or more prefixes failing RPKI ROV.
+            Cross-check against ClickHouse bgp_routes for origin AS + prefix.
+          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/rpki-invalid.md"
