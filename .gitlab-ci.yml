@@ -1,0 +1,43 @@
+stages:
+  - lint
+  - smoke-test
+
+variables:
+  DOCKER_HOST: unix:///var/run/docker.sock
+  DOCKER_TLS_CERTDIR: ""
+
+lint:
+  stage: lint
+  image: python:3.12
+  script:
+    - pip install yamllint ruff
+    - yamllint . --ignore-path .gitignore
+    - ruff check . --ignore E501
+  only:
+    - merge_requests
+    - main
+
+lint-docker:
+  stage: lint
+  image: hadolint/hadolint:latest-alpine
+  script:
+    - echo "Docker Compose validation (intent only)"
+    - yamllint docker-compose.yml
+  only:
+    - merge_requests
+    - main
+
+smoke-test:
+  stage: smoke-test
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - echo "Smoke test: validate docker-compose.yml syntax"
+    - docker-compose -f docker-compose.yml config > /dev/null
+    - echo "Smoke test: validate all YAML files"
+    - yamllint . --ignore-path .gitignore
+  only:
+    - merge_requests
+    - main
+  allow_failure: false

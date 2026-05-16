@@ -1,0 +1,99 @@
+# clab-network-observability
+
+Full BGP observability stack on ContainerLab: BMP route analytics in ClickHouse, syslog events in ELK, long-term metrics with Prometheus + Thanos, all visualized in Grafana.
+
+## Architecture
+
+```
+ContainerLab FRR nodes (3-node lab)
+  ├── BMP (port 11019) → OpenBMP → ClickHouse → Grafana (route analytics)
+  │   (BGP route monitoring, prefix churn, top peers)
+  │
+  ├── Syslog (UDP 514) → Logstash → Elasticsearch → Kibana (events)
+  │   (Neighbor up/down, prefix changes, BGP state events)
+  │
+  └── frr_exporter → Prometheus → Thanos → Grafana (long-term metrics)
+      (BGP neighbor count, route counts, convergence times)
+```
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| **ContainerLab** | 3-node FRR lab with BMP + syslog enabled |
+| **FRRouting** | BGP control plane with BMP support |
+| **OpenBMP** | BGP Monitoring Protocol collector |
+| **ClickHouse** | Time-series DB for BGP route analytics |
+| **Elasticsearch** | Syslog event storage |
+| **Logstash** | Parse FRR syslog events |
+| **Kibana** | Syslog event visualization |
+| **Prometheus** | Metrics collection (frr_exporter) |
+| **Thanos** | Long-term Prometheus storage |
+| **Grafana** | Unified dashboard (ClickHouse + Prometheus + ES) |
+| **MinIO** | Object storage for Thanos |
+| **GitLab CI/CD** | Docker Compose health checks |
+
+## Dashboards
+
+- **BGP Routes** (ClickHouse): Prefix count over time, churn rate, top peers
+- **BGP Events** (Elasticsearch): Neighbor flap timeline, state changes
+- **BGP Metrics** (Prometheus/Thanos): Neighbor count, route counts, convergence
+
+## Quick Start
+
+```bash
+# Deploy lab
+make deploy
+
+# Start monitoring stack
+docker-compose up -d
+
+# Access dashboards
+# Grafana:   http://localhost:3000 (admin/admin)
+# Kibana:    http://localhost:5601
+# ClickHouse: http://localhost:8123
+
+# Validate
+docker-compose logs -f
+
+# Cleanup
+make destroy
+docker-compose down
+```
+
+## Files
+
+- `docker-compose.yml` — All observability services (OpenBMP, ClickHouse, ELK, Prometheus, Thanos, Grafana, MinIO)
+- `topology/lab.clab.yml` — 3-node FRR lab with BMP + syslog
+- `configs/frr/frr.conf` — FRR config with BMP neighbor + syslog
+- `configs/logstash/bgp-syslog.conf` — Parse FRR BGP events
+- `configs/prometheus/prometheus.yml` — Scrape frr_exporter
+- `configs/thanos/store.yml` — Thanos sidecar config
+- `clickhouse/schema.sql` — BGP route tables
+- `grafana/dashboards/` — Pre-built dashboards (JSON)
+
+## Prerequisites
+
+- Docker & Docker Compose
+- ContainerLab
+- 4GB+ RAM (all services running)
+- FRRouting image: `frrouting/frr:9.1.0`
+
+## Data Flow
+
+1. **Route Analytics (ClickHouse)**
+   - FRR sends BMP updates → OpenBMP → ClickHouse
+   - Grafana queries `bgp_routes` table for prefix trends, churn, top peers
+   - Example: "Show prefix count per AS over 24 hours"
+
+2. **Event Logs (Elasticsearch)**
+   - FRR logs syslog (BGP neighbor state changes)
+   - Logstash parses `%BGP-5-ADJCHANGE` messages
+   - Kibana timeline shows neighbor flaps per hour
+   - Example: "When did neighbor 10.1.1.1 change state?"
+
+3. **Long-term Metrics (Prometheus/Thanos)**
+   - frr_exporter exposes FRR metrics
+   - Prometheus scrapes → Thanos stores in MinIO
+   - Grafana shows 30-day trends on neighbor count, route count
+   - Example: "BGP convergence time trending up over time?"

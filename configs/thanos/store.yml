@@ -1,0 +1,12 @@
+type: S3
+config:
+  bucket: thanos
+  endpoint: minio:9000
+  access_key: minioadmin
+  secret_key: minioadmin
+  insecure: true
+  signature_version2: false
+  put_user_metadata: {}
+  http_config:
+    dial_timeout: 10s
+    max_idle_conns: 100

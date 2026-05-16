@@ -1,0 +1,34 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'bgp-observability-lab'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'spine1'
+    static_configs:
+      - targets: ['spine1:9100']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  - job_name: 'leaf1'
+    static_configs:
+      - targets: ['leaf1:9100']
+
+  - job_name: 'leaf2'
+    static_configs:
+      - targets: ['leaf2:9100']
+
+  - job_name: 'frr_exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['localhost:9342']
+
+  - job_name: 'thanos'
+    static_configs:
+      - targets: ['thanos:10902']
