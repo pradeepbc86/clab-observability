@@ -1,4 +1,4 @@
-# clab-obs-telemetry
+# clab-observability
 
 Full BGP observability stack on ContainerLab: BMP route analytics in ClickHouse, syslog events in ELK, long-term metrics with Prometheus + Thanos, Airflow DAGs for scheduled audits, all visualized in Grafana.
 
@@ -90,7 +90,7 @@ Option 1 — join the clab network in docker-compose:
 networks:
   default:
     external: true
-    name: clab-obs-telemetry
+    name: clab-observability
 ```
 
 Option 2 — run everything with `--network host` (Linux only).

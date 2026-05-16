@@ -41,7 +41,7 @@ An RPKI-invalid prefix means a router somewhere in the fabric (or an upstream we
 
 3. **Check the BMP-receiving router's view:**
    ```bash
-   docker exec clab-obs-telemetry-spine1 vtysh -c "show bgp ipv4 <prefix>"
+   docker exec clab-observability-spine1 vtysh -c "show bgp ipv4 <prefix>"
    ```
 
 ## Mitigation

@@ -1,4 +1,4 @@
-name: obs-telemetry
+name: observability
 
 topology:
   nodes:

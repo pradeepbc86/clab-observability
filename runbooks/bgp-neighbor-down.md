@@ -14,12 +14,12 @@
 
 1. **Identify the peer + local interface:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show bgp neighbor <peer>"
+   docker exec clab-observability-<instance> vtysh -c "show bgp neighbor <peer>"
    ```
 
 2. **Check BFD state** (fast indicator of link layer):
    ```bash
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show bfd peer <peer>"
+   docker exec clab-observability-<instance> vtysh -c "show bfd peer <peer>"
    ```
    - `state: Down` with `diagnostic: Echo Function Failed` → physical/MTU
    - `state: Down` with `diagnostic: Control Detection Time Expired` → upstream loss
@@ -32,7 +32,7 @@
 
 4. **Check FIB:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> ip route show proto bgp
+   docker exec clab-observability-<instance> ip route show proto bgp
    ```
 
 ## Mitigation
@@ -49,10 +49,10 @@
 
 ```bash
 # Both sides Established
-docker exec clab-obs-telemetry-<instance> vtysh -c "show bgp summary"
+docker exec clab-observability-<instance> vtysh -c "show bgp summary"
 # Prefix counts back to baseline (compare to Grafana 24h prior)
 # BFD session Up
-docker exec clab-obs-telemetry-<instance> vtysh -c "show bfd peers"
+docker exec clab-observability-<instance> vtysh -c "show bfd peers"
 ```
 
 Alert should auto-resolve within `for: 1m` after Established.

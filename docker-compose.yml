@@ -67,6 +67,13 @@ services:
     ports:
       - "127.0.0.1:9093:9093"
 
+  # Pushgateway — accepts pushes from short-lived jobs (active OAM probes,
+  # batch DAG completions). Prometheus scrapes pushgateway like any other target.
+  pushgateway:
+    image: prom/pushgateway:latest
+    ports:
+      - "127.0.0.1:9091:9091"
+
   thanos:
     image: quay.io/thanos/thanos:latest
     command: sidecar --tsdb.path=/prometheus

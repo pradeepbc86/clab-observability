@@ -85,9 +85,9 @@ Airflow's `airflow db clean --clean-before-timestamp` is the operator hook.
 
 These ride on different rules:
 
-- `compliance-drift.jsonl` (from `clab-auto-config/compliance.py`) — keep 1 year, weekly logrotate
+- `compliance-drift.jsonl` (from `clab-automation/compliance.py`) — keep 1 year, weekly logrotate
 - `audit.jsonl` (from `clab-ai-mcp/agent.py`) — keep 90 days, daily logrotate
-- `deploy-events.jsonl` (from `clab-auto-config/deploy.py`) — keep 1 year
+- `deploy-events.jsonl` (from `clab-automation/deploy.py`) — keep 1 year
 
 For real deployments these go to SIEM (Splunk HEC / Vector → S3 with object lock for tamper-resistance) and retention is governed by SOC2 / PCI / org policy.
 
@@ -109,9 +109,9 @@ For real deployments these go to SIEM (Splunk HEC / Vector → S3 with object lo
 
 ```bash
 # Check ClickHouse TTL is actively pruning
-docker exec clab-obs-telemetry-clickhouse-1 clickhouse-client \
+docker exec clab-observability-clickhouse-1 clickhouse-client \
   --query "SELECT table, total_rows, total_bytes FROM system.parts WHERE active AND database='default'"
 
 # Check Prometheus on-disk size
-docker exec clab-obs-telemetry-prometheus-1 du -sh /prometheus
+docker exec clab-observability-prometheus-1 du -sh /prometheus
 ```

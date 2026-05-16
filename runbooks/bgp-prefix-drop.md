@@ -32,14 +32,14 @@ A sudden prefix-count drop without a session reset usually means the peer applie
 
 3. **Check our inbound route-map hits:**
    ```bash
-   docker exec clab-obs-telemetry-spine1 vtysh -c "show route-map RM-LEAVES-IN"
+   docker exec clab-observability-spine1 vtysh -c "show route-map RM-LEAVES-IN"
    ```
 
 ## Mitigation
 
 Usually no action needed if peer-initiated. If our inbound filter is at fault:
 1. Revert the route-map change via Git
-2. Apply via `clab-auto-config` deploy pipeline
+2. Apply via `clab-automation` deploy pipeline
 3. Watch prefix counts recover within ~30s
 
 ## Auto-resolution

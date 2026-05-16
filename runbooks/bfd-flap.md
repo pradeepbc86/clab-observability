@@ -22,7 +22,7 @@ Common root causes, ordered by frequency:
 
 1. **Identify the session:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show bfd peers"
+   docker exec clab-observability-<instance> vtysh -c "show bfd peers"
    ```
 
 2. **History of state changes:**
@@ -32,14 +32,14 @@ Common root causes, ordered by frequency:
 
 3. **Correlate with physical:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> ip link show <iface>
-   docker exec clab-obs-telemetry-<instance> ethtool -S <iface> | grep -i error
+   docker exec clab-observability-<instance> ip link show <iface>
+   docker exec clab-observability-<instance> ethtool -S <iface> | grep -i error
    ```
 
 4. **Check CoPP / control-plane drops** (if applicable on vendor):
    ```bash
    # vendor-specific — on FRR via zebra:
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show zebra"
+   docker exec clab-observability-<instance> vtysh -c "show zebra"
    ```
 
 ## Mitigation

@@ -14,7 +14,7 @@ groups:
           description: |
             Peer {{ $labels.peer }} has been in state {{ $labels.state }} for at least 1 minute.
             This typically indicates a link failure, BFD misconfiguration, or peer-side issue.
-          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/bgp-neighbor-down.md"
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/runbooks/bgp-neighbor-down.md"
 
       - alert: BGPPrefixCountDrop
         expr: |
@@ -32,7 +32,7 @@ groups:
           description: |
             Received prefixes from {{ $labels.peer }} dropped sharply.
             Investigate peer route filter or BGP session resets.
-          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/bgp-prefix-drop.md"
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/runbooks/bgp-prefix-drop.md"
 
       - alert: BFDSessionFlapping
         expr: changes(frr_bfd_peer_uptime_seconds[10m]) > 3
@@ -45,7 +45,7 @@ groups:
           description: |
             BFD session to {{ $labels.peer }} bounced repeatedly.
             Likely physical-layer issue (cable, optic, MTU mismatch).
-          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/bfd-flap.md"
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/runbooks/bfd-flap.md"
 
       - alert: EVPNVNIDown
         expr: frr_evpn_vni_active == 0
@@ -58,7 +58,7 @@ groups:
           description: |
             VNI {{ $labels.vni }} stopped advertising MAC/IP routes.
             Hosts behind this leaf may lose connectivity to the rest of the segment.
-          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/evpn-vni-down.md"
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/runbooks/evpn-vni-down.md"
 
       - alert: RPKIInvalidObserved
         expr: increase(bmp_rpki_invalid_total[1h]) > 0
@@ -71,4 +71,50 @@ groups:
           description: |
             BMP stream surfaced one or more prefixes failing RPKI ROV.
             Cross-check against ClickHouse bgp_routes for origin AS + prefix.
-          runbook_url: "https://github.com/pradeepbc86/clab-obs-telemetry/blob/main/runbooks/rpki-invalid.md"
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/runbooks/rpki-invalid.md"
+
+  - name: data_plane_health
+    interval: 30s
+    rules:
+
+      - alert: DataPlaneSilentBlackhole
+        expr: fabric_probe_loss_ratio > 0.5
+        for: 30s
+        labels:
+          severity: critical
+          team: network-ops
+        annotations:
+          summary: "Active probe {{ $labels.source }}→{{ $labels.target }} losing >50%"
+          description: |
+            Control plane reports healthy (no BGP/BFD alerts) but the active OAM
+            probe shows packet loss. Likely silent blackhole — FIB inconsistency,
+            kernel netfilter drop, or asymmetric routing.
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/docs/active-oam.md"
+
+      - alert: FabricJumboMTUBroken
+        expr: fabric_probe_pmtu_9000_ok == 0 and fabric_probe_pmtu_1500_ok == 1
+        for: 1m
+        labels:
+          severity: warning
+          team: network-ops
+        annotations:
+          summary: "9000B DF ping fails but 1500B succeeds — jumbo path broken"
+          description: |
+            Underlay MTU misconfiguration on one of the fabric links between
+            {{ $labels.source }} and {{ $labels.target }}.
+          runbook_url: "https://github.com/pradeepbc86/clab-observability/blob/main/docs/active-oam.md"
+
+  - name: platform_health
+    interval: 60s
+    rules:
+
+      - alert: PrometheusHighSeriesCount
+        expr: prometheus_tsdb_head_series > 400000
+        for: 10m
+        labels:
+          severity: warning
+          team: observability
+        annotations:
+          summary: "TSDB series count {{ $value }} approaching 500k limit"
+          description: |
+            Cardinality drift. See docs/cardinality-budget.md.

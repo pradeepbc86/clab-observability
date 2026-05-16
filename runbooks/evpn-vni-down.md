@@ -12,24 +12,24 @@ Hosts behind this leaf in the affected VNI lose L2 reachability across the fabri
 
 1. **VNI state on the affected leaf:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show evpn vni <vni>"
+   docker exec clab-observability-<instance> vtysh -c "show evpn vni <vni>"
    ```
    Expected: `VxLAN Interface: vxlan<vni>`, `Local VTEP IP`, `Remote VTEPs: N`.
 
 2. **Underlying bridge / vxlan kernel state:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> ip -d link show vxlan<vni>
-   docker exec clab-obs-telemetry-<instance> bridge fdb show dev vxlan<vni>
+   docker exec clab-observability-<instance> ip -d link show vxlan<vni>
+   docker exec clab-observability-<instance> bridge fdb show dev vxlan<vni>
    ```
 
 3. **EVPN BGP routes — is the leaf advertising/receiving Type-3?**
    ```bash
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show bgp l2vpn evpn route type 3"
+   docker exec clab-observability-<instance> vtysh -c "show bgp l2vpn evpn route type 3"
    ```
 
 4. **`advertise-all-vni` config check:**
    ```bash
-   docker exec clab-obs-telemetry-<instance> vtysh -c "show running-config bgpd" | grep -A20 'l2vpn evpn'
+   docker exec clab-observability-<instance> vtysh -c "show running-config bgpd" | grep -A20 'l2vpn evpn'
    ```
 
 ## Common causes
@@ -45,10 +45,10 @@ Hosts behind this leaf in the affected VNI lose L2 reachability across the fabri
 
 Bounce the VNI gracefully:
 ```bash
-docker exec clab-obs-telemetry-<instance> vtysh -c "clear bgp l2vpn evpn *"
+docker exec clab-observability-<instance> vtysh -c "clear bgp l2vpn evpn *"
 ```
 
 If `vxlan<vni>` interface is missing, re-apply leaf setup:
 ```bash
-docker exec clab-obs-telemetry-<instance> bash /etc/frr/setup.sh
+docker exec clab-observability-<instance> bash /etc/frr/setup.sh
 ```

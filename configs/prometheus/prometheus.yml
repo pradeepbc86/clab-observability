@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'obs-telemetry-lab'
+    monitor: 'observability-lab'
 
 rule_files:
   - /etc/prometheus/alerts.yml
@@ -14,7 +14,7 @@ alerting:
 
 # Note: for these targets to be reachable, the Prometheus container must
 # share a Docker network with the ContainerLab nodes. See README "Network
-# Setup Note" — easiest is `networks: default: external: name: clab-obs-telemetry`.
+# Setup Note" — easiest is `networks: default: external: name: clab-observability`.
 # frr_exporter (https://github.com/tynany/frr_exporter) listens on 9342 — must
 # run as a sidecar on each FRR node since the FRR image doesn't bundle it.
 
@@ -25,13 +25,18 @@ scrape_configs:
 
   - job_name: 'frr-fabric'
     static_configs:
-      - targets: ['clab-obs-telemetry-spine1:9342']
+      - targets: ['clab-observability-spine1:9342']
         labels: { instance: 'spine1' }
-      - targets: ['clab-obs-telemetry-leaf1:9342']
+      - targets: ['clab-observability-leaf1:9342']
         labels: { instance: 'leaf1' }
-      - targets: ['clab-obs-telemetry-leaf2:9342']
+      - targets: ['clab-observability-leaf2:9342']
         labels: { instance: 'leaf2' }
 
   - job_name: 'thanos'
     static_configs:
       - targets: ['thanos:10902']
+
+  - job_name: 'pushgateway'
+    honor_labels: true
+    static_configs:
+      - targets: ['pushgateway:9091']
